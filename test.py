@@ -1,14 +1,23 @@
-import mem_ppo
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.distributions import Categorical
+import numpy as np
+import matplotlib.pyplot as plt
+import gym
+
+from mem_ppo import MEM_PPO
 
 total_lst = []
 print_interval = 10
 episodes = 1000
 tryes = 100
+T_horizon = 20
     
 for i in range(tryes):
     print(i,"th trys")
     env = gym.make('CartPole-v1')
-    model = PPO()
+    model = MEM_PPO()
     score = 0.0
     
     
