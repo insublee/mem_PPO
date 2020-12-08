@@ -9,40 +9,40 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-#Hyperparameters
-learning_rate = 0.0005
-gamma         = 0.98
-lmbda         = 0.95
-eps_clip      = 0.1
-K_epoch       = 3
-T_horizon     = 20
-mem_th = 0.9
-age_noise = 2
 
-h_d=256
-s_d=4
-a_d=2
-memory_size=1024
 
-class PPO(nn.Module):
+
+class MEM_PPO(nn.Module):
     def __init__(self):
         super(PPO, self).__init__()
         self.data = []
-        
-        self.fc1   = nn.Linear(s_d,h_d)
-        self.fc2   = nn.Linear(s_d*2,h_d)
-        self.fc_pi = nn.Linear(h_d,2)
-        self.fc_v  = nn.Linear(h_d,1)
-        self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
+        self.learning_rate = 0.0005
+        self.gamma         = 0.98
+        self.lmbda         = 0.95
+        self.eps_clip      = 0.1
+        self.K_epoch       = 3
+        self.T_horizon     = 20
+        self.mem_th = 0.9
+        self.age_noise = 2
+
+        self.h_d=256
+        self.s_d=4
+        self.a_d=2
+        self.memory_size=1024
+        self.fc1   = nn.Linear(self.s_d,self.h_d)
+        self.fc2   = nn.Linear(self.s_d*2,self.h_d)
+        self.fc_pi = nn.Linear(self.h_d,2)
+        self.fc_v  = nn.Linear(self.h_d,1)
+        self.optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
 
         self.mem_build()
         
     def mem_build(self):
         self.keys = Variable(F.normalize(torch.rand(
-            (memory_size, s_d))-0.5, dim=1), requires_grad=False)
+            (self.memory_size, self.s_d))-0.5, dim=1), requires_grad=False)
         self.values = Variable(F.normalize(torch.rand(
-            (memory_size, s_d))-0.5, dim=1), requires_grad=False)
-        self.age = torch.zeros(memory_size, 1).int()
+            (self.memory_size, self.s_d))-0.5, dim=1), requires_grad=False)
+        self.age = torch.zeros(self.memory_size, 1).int()
     
     def retrive(self,x,topk):
         k_sim = torch.matmul(x, self.keys.T)
