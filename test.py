@@ -1,3 +1,5 @@
+import mem_ppo
+
 total_lst = []
 print_interval = 10
 episodes = 1000
