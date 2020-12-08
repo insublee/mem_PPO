@@ -1,27 +1,20 @@
-import gym
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
-from torch.distributions import Categorical
-import numpy as np
-import matplotlib.pyplot as plt
-
-
 
 
 
 class MEM_PPO(nn.Module):
     def __init__(self):
-        super(PPO, self).__init__()
+        super(MEM_PPO, self).__init__()
         self.data = []
         self.learning_rate = 0.0005
         self.gamma         = 0.98
         self.lmbda         = 0.95
         self.eps_clip      = 0.1
         self.K_epoch       = 3
-        self.T_horizon     = 20
         self.mem_th = 0.9
         self.age_noise = 2
 
@@ -73,7 +66,7 @@ class MEM_PPO(nn.Module):
             print("v_hat_top1 :", v_hat_top1.size())
         
         # 그 정보도 같이 넣어준다. x[batch,s_d]
-        x = torch.cat((x, v_hat_top1),dim=1).reshape(x.size(0),s_d*2)
+        x = torch.cat((x, v_hat_top1),dim=1).reshape(x.size(0),self.s_d*2)
         #x = torch.cat((x, v_hat_top1),dim=1)
         if flag:
             #print(" torch.cat((x, v_hat_top1),dim=1).squeeze(0) : ",x.size())
@@ -104,8 +97,8 @@ class MEM_PPO(nn.Module):
             v_sim = torch.mm(v_hat, s_p_t.T)
             
             # 예측이랑 실제랑 차이가 많이 남
-            if v_sim.item() < mem_th:
-                age_with_noise = self.age + age_noise * torch.rand((memory_size, 1))
+            if v_sim.item() < self.mem_th:
+                age_with_noise = self.age + self.age_noise * torch.rand((self.memory_size, 1))
                 oldest_indices = torch.argmax(age_with_noise)
 
                 self.keys[oldest_indices] = s_t
@@ -139,15 +132,15 @@ class MEM_PPO(nn.Module):
     def train_net(self, flag=False):
         s, a, r, s_prime, done_mask, prob_a = self.make_batch()
 
-        for i in range(K_epoch):
-            td_target = r + gamma * self.v(s_prime) * done_mask
+        for i in range(self.K_epoch):
+            td_target = r + self.gamma * self.v(s_prime) * done_mask
             delta = td_target - self.v(s)
             delta = delta.detach().numpy()
 
             advantage_lst = []
             advantage = 0.0
             for delta_t in delta[::-1]:
-                advantage = gamma * lmbda * advantage + delta_t[0]
+                advantage = self.gamma * self.lmbda * advantage + delta_t[0]
                 advantage_lst.append([advantage])
             advantage_lst.reverse()
             advantage = torch.tensor(advantage_lst, dtype=torch.float)
@@ -157,10 +150,9 @@ class MEM_PPO(nn.Module):
             ratio = torch.exp(torch.log(pi_a) - torch.log(prob_a))  # a/b == exp(log(a)-log(b))
 
             surr1 = ratio * advantage
-            surr2 = torch.clamp(ratio, 1-eps_clip, 1+eps_clip) * advantage
+            surr2 = torch.clamp(ratio, 1-self.eps_clip, 1+self.eps_clip) * advantage
             loss = -torch.min(surr1, surr2) + F.smooth_l1_loss(self.v(s) , td_target.detach())
 
             self.optimizer.zero_grad()
             loss.mean().backward()
             self.optimizer.step()
-        
