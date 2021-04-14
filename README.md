@@ -1,7 +1,7 @@
 # mem_PPO
  - - -
 ## Introduction
-- Implementations of On-shot memory + PPO(with GAE) with Pytorch
+- Implementations of One-shot memory + PPO(with GAE) with Pytorch
 - Run in "CartPole-v0" environment.
 
 ## Algorithms
